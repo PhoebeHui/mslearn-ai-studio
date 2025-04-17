@@ -1,7 +1,10 @@
 import os
 
 # Add references
-
+from dotenv import load_dotenv
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
+from azure.ai.inference.models import SystemMessage, UserMessage, AssistantMessage
 
 def main(): 
 
@@ -16,13 +19,17 @@ def main():
         model_deployment =  os.getenv("MODEL_DEPLOYMENT")
         
         # Initialize the project client
-        
+        projectClient = AIProjectClient.from_connection_string(
+            conn_str=project_connection,
+            credential=DefaultAzureCredential())
 
         ## Get a chat client
-
+        chat = projectClient.inference.get_chat_completions_client()
 
         ## Initialize prompt with system message
-         
+        prompt=[
+                 SystemMessage("You are a helpful AI assistant that answers questions.")
+            ]
 
         # Loop until the user types 'quit'
         while True:
@@ -35,7 +42,13 @@ def main():
                 continue
             
             # Get a chat completion
-
+            prompt.append(UserMessage(input_text))
+            response = chat.complete(
+                model=model_deployment,
+                messages=prompt)
+            completion = response.choices[0].message.content
+            print(completion)
+            prompt.append(AssistantMessage(completion))
 
     except Exception as ex:
         print(ex)
