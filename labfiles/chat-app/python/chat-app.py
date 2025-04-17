@@ -1,4 +1,5 @@
 import os
+import openai
 
 # Add references
 from dotenv import load_dotenv
@@ -24,13 +25,16 @@ def main():
             credential=DefaultAzureCredential())
 
         ## Get a chat client
-        chat = projectClient.inference.get_chat_completions_client()
+       # chat = projectClient.inference.get_chat_completions_client()
+        openai_client = projectClient.inference.get_azure_openai_client(api_version="2024-10-21")
 
         ## Initialize prompt with system message
+        # prompt=[
+        #          SystemMessage("You are a helpful AI assistant that answers questions.")
+        #     ]
         prompt=[
-                 SystemMessage("You are a helpful AI assistant that answers questions.")
+                {"role": "system", "content": "You are a helpful AI assistant that answers questions."}
             ]
-
         # Loop until the user types 'quit'
         while True:
             # Get input text
@@ -42,14 +46,21 @@ def main():
                 continue
             
             # Get a chat completion
-            prompt.append(UserMessage(input_text))
-            response = chat.complete(
-                model=model_deployment,
-                messages=prompt)
+            # prompt.append(UserMessage(input_text))
+            # response = chat.complete(
+            #     model=model_deployment,
+            #     messages=prompt)
+            # completion = response.choices[0].message.content
+            # print(completion)
+            # prompt.append(AssistantMessage(completion))
+
+            prompt.append({"role": "user", "content": input_text})
+            response = openai_client.chat.completions.create(
+                 model=model_deployment,
+                 messages=prompt)
             completion = response.choices[0].message.content
             print(completion)
-            prompt.append(AssistantMessage(completion))
-
+            prompt.append({"role": "assistant", "content": completion})
     except Exception as ex:
         print(ex)
 
